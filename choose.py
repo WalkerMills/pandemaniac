@@ -24,7 +24,6 @@ def degree_discount(num_seeds, data):
         # save node with highest discounted degree
         best_seed = max(dynamic_deg, key=dynamic_deg.get)
         seed_nodes.append(best_seed)
-        print(best_seed)
         # remove this node from the dictionary
         del dynamic_deg[best_seed]
         # discount the degree of recently selected seed
@@ -37,16 +36,32 @@ def degree_discount(num_seeds, data):
 
     return seed_nodes
 
+def pagerank(num_seeds, data):
+    degree = {}
+    seed_nodes = []
+    for node in data:
+        degree[node] = 0
+        for nbor in data[node]:
+            degree[node] += 1
+
+    for i in range(num_seeds):
+        best_seed = max(degree, key=degree.get)
+        seed_nodes.append(best_seed)
+        del degree[best_seed]
+    return seed_nodes
+
 def main():
     with open("input.txt", "r") as f:
         data = json.load(f)
     sorted_data = sorted(data.keys(), key=lambda k: (len(data[k]), k) )
     sorted_data2 = degree_discount(10, data)
+    sorted_data3 = pagerank(10, data)
 
     for i in range(10):
-        print('degree, degree_discount: {}, {}'.format( \
+        print('degree, degree_discount, pagerank: {}, {}, {}'.format( \
                             sorted_data[len(sorted_data) - i - 1], \
-                            sorted_data2[i]))
+                            sorted_data2[i], \
+                            sorted_data3[i]))
     # to speed up computation, ignore nodes with degree below ***
 
 
