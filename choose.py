@@ -1,69 +1,53 @@
+#!/usr/bin/env python3
+
+import argparse
 import json
+import sys
 
-def degree_discount(num_seeds, data):
-    # tuneable parameter for inferring influence of node on neighbors
-    p = .01
-    # chosen seed nodes
-    seed_nodes = []
-    # dynamic degrees of nodes (will be discounted)
-    dynamic_deg = {}
-    # original degrees of nodes
-    static_deg = {}
-    # number of neighbors of given node in seed_nodes
-    seed_nbors = {}
-
-    # create a list of (node, degree) tuples
-    for node in data:
-        dynamic_deg[node] = len(data[node])
-        static_deg[node] = len(data[node])
-        seed_nbors[node] = 0
-
-
-    # run degree discount algorithm
-    for i in range(num_seeds):
-        # save node with highest discounted degree
-        best_seed = max(dynamic_deg, key=dynamic_deg.get)
-        seed_nodes.append(best_seed)
-        # remove this node from the dictionary
-        del dynamic_deg[best_seed]
-        # discount the degree of recently selected seed
-        for node in data[best_seed]:
-            seed_nbors[node] += 1
-            dv = static_deg[node]
-            tv = seed_nbors[node]
-            if node not in seed_nodes:
-                dynamic_deg[node] = dv - 2 * tv - (dv - tv) * tv * p
-
-    return seed_nodes
-
-def pagerank(num_seeds, data):
-    degree = {}
-    seed_nodes = []
-    for node in data:
-        degree[node] = 0
-        for nbor in data[node]:
-            degree[node] += 1
-
-    for i in range(num_seeds):
-        best_seed = max(degree, key=degree.get)
-        seed_nodes.append(best_seed)
-        del degree[best_seed]
-    return seed_nodes
+import seeds
 
 def main():
-    with open("input.txt", "r") as f:
+    parser = argparse.ArgumentParser(
+        description="Select seed nodes for a given graph, according to various"
+                    " centrality & influence metrics")
+    metrics = parser.add_argument_group("metrics",
+        "These options control how many seeds are selected using each metric. "
+        " By default, no seeds are selected.")
+    parser.add_argument("graph", metavar="GRAPH", 
+                        help="The location of the graph, stored as a node "
+                             "adjacency list in JSON format")
+    parser.add_argument("trials", metavar="TRIALS", type=int,
+                        help="The number of trials, used to control how many "
+                             "times the seeds are printed to stdout")
+    metrics.add_argument("-d", "--discount", dest="discount", type=int,
+                         help="The number of seeds to select using the degree"
+                              " discount heuristic", default=0)
+    metrics.add_argument("-D", "--degree", dest="degree", type=int,
+                         help="The number of seeds to select by maximum "
+                              "degree", default=0)
+    metrics.add_argument("-i", "--iterated", dest="iterated", type=int,
+                         help="The number of seeds to select by maximum "
+                              "iterated degree", default=0)
+    parsed = parser.parse_args()
+    # Load the given adjacency list
+    with open(parsed.graph, "r") as f:
         data = json.load(f)
-    sorted_data = sorted(data.keys(), key=lambda k: (len(data[k]), k) )
-    sorted_data2 = degree_discount(10, data)
-    sorted_data3 = pagerank(10, data)
-
-    for i in range(10):
-        print('degree, degree_discount, pagerank: {}, {}, {}'.format( \
-                            sorted_data[len(sorted_data) - i - 1], \
-                            sorted_data2[i], \
-                            sorted_data3[i]))
-    # to speed up computation, ignore nodes with degree below ***
-
+    # Initialize dictionary of keyword arguments for SeedSelector constructor
+    kwargs = {}
+    # For each metric
+    for metric in seeds.SeedSelector.order:
+        # Get the value (if any; defaults to 0) that was given by the user
+        value = getattr(parsed, metric)
+        # Map the metric label to its given value
+        kwargs[metric] = value
+    # Initialize the seed selector
+    gen = seeds.SeedSelector(data, **kwargs)
+    # Choose the seed nodes
+    gen.choose()
+    # Print as many copies of the newline-delimited seeds as necessary
+    for i in range(parsed.trials):
+        sys.stdout.write("".join("{}\n".format(s) for s in gen.seeds))
+    sys.stdout.flush()
 
 if __name__ == "__main__":
     main()
