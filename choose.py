@@ -6,6 +6,15 @@ import sys
 
 import seeds
 
+def parse_data(graph):
+    # Open the given adjacency list file
+    with open(graph, "r") as f:
+        # Parse the JSON
+        data = json.load(f)
+        # Cast nodes & neighbors to int's
+        data = {int(k): [int(n) for n in v] for k, v in data.items()}
+    return data
+
 def main():
     parser = argparse.ArgumentParser(
         description="Select seed nodes for a given graph, according to various"
@@ -30,9 +39,7 @@ def main():
                               "iterated degree", default=0)
     parsed = parser.parse_args()
     # Load the given adjacency list
-    with open(parsed.graph, "r") as f:
-        data = json.load(f)
-        data = {int(k): [int(n) for n in v] for k, v in data.items()}
+    data = parse_data(parsed.graph)
     # Initialize dictionary of keyword arguments for SeedSelector constructor
     kwargs = {}
     # For each metric

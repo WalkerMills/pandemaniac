@@ -9,7 +9,7 @@ class SeedSelector:
     order = ["discount", "degree", "iterated"]
 
     # Default number of generations for the iterated degree metric
-    generations = 2
+    generations = 3
 
     def __init__(self, graph, discount=0, degree=0, iterated=0):
         # Store graph data
