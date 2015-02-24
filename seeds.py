@@ -1,5 +1,7 @@
 import inspect
 
+import interface
+
 
 class SeedSelector:
 
@@ -34,36 +36,45 @@ class SeedSelector:
 
         # Probability that a node will color its neighbor
         p = .01
+        # multiplier * self.discount of the largest nodes are stored to be
+        # updated by the degree discount algorithm
+        multiplier = 2
         # Maps node ID -> discounted node degree
         discounted = {}
         # Maps node ID -> number of neighboring seeds
         neighbors = {}
+        # Limited-size max heap for storing the highest ranked nodes
+        largest = interface.rank_heap(int(self.discount * multiplier))
 
-        # Initialize the discounted node degrees & neighboring seeds
+        # For each node in the graph
         for node, adjacent in self.graph.items():
             # If this node is not already a seed
             if node not in self.seeds:
-                discounted[node] = len(adjacent)
-                neighbors[node] = len(self.seeds.intersection(adjacent))
+                # Try adding its (rank, ID) tuple to the ranking max heap
+                largest.insert(len(adjacent), node)
+        # While the rank heap contains nodes
+        while largest.size() > 0:
+            # Extract the (rank, node) tuple of maximum rank
+            node, rank = largest.get_max()
+            # Initialize an entry in the discounted & neighbors mappings
+            discounted[node] = rank
+            neighbors[node] = len(self.seeds.intersection(self.graph[node]))
 
-        # Current number of seed nodes
-        current = len(self.seeds)
-        # Target number of seed nodes
-        final = len(self.seeds) + self.discount
         # While we do not have enough new seeds
-        while current < final:
+        for i in range(self.discount):
             # Get the node with maximum discounted degree
             best_seed = max(discounted, key=discounted.get)
-            # Try adding the node to the seed set
+            # Add the node to the seed set
             self.seeds.add(best_seed)
-            # Update the current number of seeds
-            current = len(self.seeds)
             # Ignore this node in future iterations
             del discounted[best_seed]
             del neighbors[best_seed]
-            # Discount the degrees of non-seed neighbors
-            for node in set(self.graph[best_seed]) - self.seeds:
-                neighbors[node] += 1
+            # Discount the degrees of its neighbors
+            for node in set(self.graph[best_seed]):
+                try:
+                    neighbors[node] += 1
+                except KeyError:
+                    continue
                 dv = len(self.graph[node])
                 tv = neighbors[node]
                 discounted[node] = dv - 2 * tv - (dv - tv) * tv * p
@@ -77,6 +88,7 @@ class SeedSelector:
             current = 0
             # Add the root node to the current generation
             frontier[current].append(node)
+
             # While we have not traversed to the required depth
             while current < generations:
                 # Move to the next generation
@@ -103,26 +115,21 @@ class SeedSelector:
 
         # Maps node ID -> iterated out-degree
         iterated = {}
-        # Calculate iterated degree for every node in the graph
+        # Limited-size max heap for storing the highest ranked nodes
+        largest = interface.rank_heap(new)
+        # For each node in the graph
         for node in self.graph:
-            iterated[node] = bfs_count(node, generations)
+            # If this node is not already a seed
+            if node not in self.seeds:
+                # Try adding its (rank, ID) tuple to the ranking max heap
+                largest.insert(bfs_count(node, generations), node)
 
-        # Sort the nodes in the graph by degree, breaking ties by ID
-        data = sorted(iterated.keys(), key=lambda k: (len(self.graph[k]), k))
-        # Current number of seed nodes
-        current = len(self.seeds)
-        # Target number of seed nodes
-        final = len(self.seeds) + new
-        # Initial offset in the ranked node list
-        offset = 0
         # While we do not have enough new seeds
-        while current < final:
-            # Try adding the current node to the seed set
-            self.seeds.add(data[offset])
-            # Update the current number of seeds
-            current = len(self.seeds)
-            # Examine the next node
-            offset += 1
+        for i in range(new):
+            # Extract the maximum-rank node from the heap
+            node, _ = largest.get_max()
+            # Add the node to the seed set
+            self.seeds.add(node)
 
     def choose(self):
         # Clear any existing seeds

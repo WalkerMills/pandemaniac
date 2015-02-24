@@ -32,6 +32,7 @@ def main():
     # Load the given adjacency list
     with open(parsed.graph, "r") as f:
         data = json.load(f)
+        data = {int(k): [int(n) for n in v] for k, v in data.items()}
     # Initialize dictionary of keyword arguments for SeedSelector constructor
     kwargs = {}
     # For each metric
