@@ -44,7 +44,7 @@ mklib:
 
 # Generate a C++ file from a Cython file
 %.cpp: %.pyx mklib
-	$(CYTHON) $(CYTHON_FLAGS) --cplus $(srcdir)/$< -o $(srcdir)/$@
+	$(CYTHON) $(CYTHON_FLAGS) $(srcdir)/$< -o $(srcdir)/$@
 
 interface.o: private ALL_CFLAGS += $(CYTHON_CFLAGS)
 
