@@ -37,6 +37,9 @@ def main():
     metrics.add_argument("-i", "--iterated", dest="iterated", type=int,
                          help="The number of seeds to select by maximum "
                               "iterated degree", default=0)
+    metrics.add_argument("-c", "--close", dest="close", type=int,
+                         help="The number of seeds to select by maximum "
+                              "closeness centrality", default=0)
     parsed = parser.parse_args()
     # Load the given adjacency list
     data = parse_data(parsed.graph)

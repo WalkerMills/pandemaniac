@@ -1,4 +1,5 @@
 import inspect
+import networkx as nx
 
 import interface
 
@@ -6,12 +7,12 @@ import interface
 class SeedSelector:
 
     # Labels for each different centrality/influence metric
-    order = ["discount", "degree", "iterated"]
+    order = ["discount", "degree", "iterated", "close"]
 
     # Default number of generations for the iterated degree metric
     generations = 3
 
-    def __init__(self, graph, discount=0, degree=0, iterated=0):
+    def __init__(self, graph, discount=0, degree=0, iterated=0, close=0):
         # Store graph data
         self.graph = graph
         # Initialize seed set
@@ -20,7 +21,8 @@ class SeedSelector:
         self.seed_functions = {
             "discount": self._discount_seeds,
             "degree": lambda: self._iterated_degree_seeds(1),
-            "iterated": lambda: self._iterated_degree_seeds(self.generations)
+            "iterated": lambda: self._iterated_degree_seeds(self.generations),
+            "close": self._close_seeds
         }
         # Get information about this stack frame
         argspec = inspect.getargvalues(inspect.currentframe())
@@ -28,6 +30,32 @@ class SeedSelector:
         for arg in argspec.args[2:]:
             # Store it as a class attribute
             setattr(self, arg, argspec.locals[arg])
+
+    def _close_seeds(self):
+        # Convert graph data into networkx Graph class
+        G = nx.Graph(self.graph)
+        # Limited-size max heap for storing the highest ranked nodes
+        largest = interface.rank_heap(self.close)
+
+        # For each node in the graph
+        for node in self.graph:
+            # If this node is not already a seed node
+            if node not in self.seeds:
+                try:
+                    # Calculate its closeness centrality
+                    rank = nx.closeness_centrality(G, node)
+                    # Try adding its (rank, ID) tuple to the ranking max heap
+                    largest.insert(rank, node)
+                except Exception:
+                    # Ignore nodes for which the computation fails
+                    continue
+
+        # While we do not have enough new seeds
+        for i in range(self.close):
+            # Extract the maximum-rank node from the heap
+            node, _ = largest.get_max()
+            # Add the node to the seed set
+            self.seeds.add(node)
 
     def _discount_seeds(self):
         # Terminate if this metric is not being used
