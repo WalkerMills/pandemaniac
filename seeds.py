@@ -55,7 +55,6 @@ class SeedSelector:
                    nx.betweenness_centrality(nx.Graph(self.graph)).items()))
         # Limited-size max heap for storing the highest ranked nodes
         largest = interface.rank_heap(int(self.between * self.multiplier))
-
         # For each node in the graph
         for node, rank in betweenness.items():
             # If this node is not already a seed node
@@ -205,6 +204,7 @@ class SeedSelector:
             self.seeds[label].add(node)
 
     def choose(self):
+        # If this selector is using semi-random nodes
         if self.multiplier > 1:
             # Initialize the list of chosen seeds
             chosen = []
@@ -228,7 +228,6 @@ class SeedSelector:
                     # Add the seeds for this metric to the chosen seeds list
                     chosen += possible_seeds
         else:
-            print("here")
             chosen = list(itertools.chain.from_iterable(self.seeds.values()))
         return chosen
 
