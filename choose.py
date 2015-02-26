@@ -28,18 +28,31 @@ def main():
     parser.add_argument("trials", metavar="TRIALS", type=int,
                         help="The number of trials, used to control how many "
                              "times the seeds are printed to stdout")
-    metrics.add_argument("-d", "--discount", dest="discount", type=int,
+    parser.add_argument("-e", "--entropy", metavar="ENTROPY", type=float, 
+                        default=0,
+                        help="The proportion of extra nodes which are kept, in"
+                             " order to randomize which of the top seeds are "
+                             "chosen")
+    metrics.add_argument("-b", "--" + seeds.BETWEEN, dest=seeds.BETWEEN,
+                         type=int, default=0,
+                         help="The number of nodes to select by maximum "
+                              "betweenness centrality")
+    metrics.add_argument("-c", "--" + seeds.CLOSE, dest=seeds.CLOSE, type=int,
+                         default=0,
+                         help="The number of seeds to select by maximum "
+                              "closeness centrality")
+    metrics.add_argument("-D", "--" + seeds.DEGREE, dest=seeds.DEGREE,
+                         type=int, default=0,
+                         help="The number of seeds to select by maximum "
+                              "degree")
+    metrics.add_argument("-d", "--" + seeds.DISCOUNT, dest=seeds.DISCOUNT,
+                         type=int, default=0,
                          help="The number of seeds to select using the degree"
-                              " discount heuristic", default=0)
-    metrics.add_argument("-D", "--degree", dest="degree", type=int,
+                              " discount heuristic")
+    metrics.add_argument("-i", "--" + seeds.ITERATED, dest=seeds.ITERATED,
+                         type=int, default=0,
                          help="The number of seeds to select by maximum "
-                              "degree", default=0)
-    metrics.add_argument("-i", "--iterated", dest="iterated", type=int,
-                         help="The number of seeds to select by maximum "
-                              "iterated degree", default=0)
-    metrics.add_argument("-c", "--close", dest="close", type=int,
-                         help="The number of seeds to select by maximum "
-                              "closeness centrality", default=0)
+                              "iterated degree")
     parsed = parser.parse_args()
     # Load the given adjacency list
     data = parse_data(parsed.graph)
@@ -51,13 +64,13 @@ def main():
         value = getattr(parsed, metric)
         # Map the metric label to its given value
         kwargs[metric] = value
+    kwargs["entropy"] = parsed.entropy
     # Initialize the seed selector
     gen = seeds.SeedSelector(data, **kwargs)
-    # Choose the seed nodes
-    gen.choose()
-    # Print as many copies of the newline-delimited seeds as necessary
+    # Print as many (possibly)
     for i in range(parsed.trials):
-        sys.stdout.write("".join("{}\n".format(s) for s in gen.seeds))
+        sys.stdout.write("".join("{}\n".format(s) for s in gen.choose()))
+        sys.stdout.write("\n")
     sys.stdout.flush()
 
 if __name__ == "__main__":
