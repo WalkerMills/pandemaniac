@@ -70,7 +70,6 @@ def main():
     # Print as many (possibly)
     for i in range(parsed.trials):
         sys.stdout.write("".join("{}\n".format(s) for s in gen.choose()))
-        sys.stdout.write("\n")
     sys.stdout.flush()
 
 if __name__ == "__main__":
